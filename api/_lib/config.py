@@ -24,6 +24,17 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
 # request as the x-vapi-secret header.
 VAPI_SERVER_SECRET = os.environ.get("VAPI_SERVER_SECRET", "").strip()
 
+# Vapi's *public* key, which is meant to be visible to the browser - it only
+# authorises starting a web call. Serving it from /health rather than baking it
+# in as a NEXT_PUBLIC_ variable means rotating the key does not need a rebuild.
+# The NEXT_PUBLIC_ spelling is still honoured so an existing build-time value
+# keeps working.
+VAPI_PUBLIC_KEY = (
+    os.environ.get("VAPI_PUBLIC_KEY")
+    or os.environ.get("NEXT_PUBLIC_VAPI_PUBLIC_KEY")
+    or ""
+).strip()
+
 # --- Embeddings ------------------------------------------------------------
 # Pinecone hosts the embedding model, so no separate embedding provider or key
 # is needed and nothing has to be downloaded into the serverless bundle.

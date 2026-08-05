@@ -44,6 +44,8 @@ export type Health = {
   documents: number;
   chunks: number;
   secured: boolean;
+  /** Vapi's public key, safe to expose - it only authorises starting a call. */
+  vapi_public_key: string;
 };
 
 export type Turn = {

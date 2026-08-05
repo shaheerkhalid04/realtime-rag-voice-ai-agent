@@ -52,6 +52,7 @@ def health():
         "documents": len(documents),
         "chunks": 0 if missing else store.count_chunks(),
         "secured": bool(config.VAPI_SERVER_SECRET),
+        "vapi_public_key": config.VAPI_PUBLIC_KEY,
     }
 
 

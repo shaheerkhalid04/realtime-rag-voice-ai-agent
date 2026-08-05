@@ -81,8 +81,13 @@ cp .env.example .env.local
 | --- | --- |
 | `PINECONE_API_KEY` | [app.pinecone.io](https://app.pinecone.io) → API Keys |
 | `GROQ_API_KEY` | [console.groq.com/keys](https://console.groq.com/keys) |
-| `NEXT_PUBLIC_VAPI_PUBLIC_KEY` | [dashboard.vapi.ai](https://dashboard.vapi.ai) → API Keys → **Public** key |
+| `VAPI_PUBLIC_KEY` | [dashboard.vapi.ai](https://dashboard.vapi.ai) → API Keys → **Public** key |
 | `NEXT_PUBLIC_RAG_LLM_ORIGIN` | The public HTTPS origin Vapi should call (see below) |
+
+Vapi's public key is deliberately *not* a `NEXT_PUBLIC_` build-time variable. The backend
+reads it and hands it to the page through `/api/py/health`, so rotating the key takes
+effect without a rebuild. A build-time `NEXT_PUBLIC_VAPI_PUBLIC_KEY` still works and wins
+if both are set.
 
 All four have a free tier. The Pinecone index is created on first use — nothing to set
 up in either dashboard.
@@ -131,10 +136,10 @@ than failing mid-connection.
 vercel --prod
 ```
 
-Set `PINECONE_API_KEY`, `GROQ_API_KEY`, `NEXT_PUBLIC_VAPI_PUBLIC_KEY` and
-`NEXT_PUBLIC_RAG_LLM_ORIGIN` (your deployment's own URL) in the project's environment
-variables. `vercel.json` gives the Python function a 60-second ceiling and bundles
-`api/_lib`.
+Set `PINECONE_API_KEY`, `GROQ_API_KEY` and `VAPI_PUBLIC_KEY` in the project's environment
+variables. `NEXT_PUBLIC_RAG_LLM_ORIGIN` can be left unset in production — the page falls
+back to its own origin, which is already publicly reachable. `vercel.json` gives the
+Python function a 60-second ceiling and bundles `api/_lib`.
 
 Deploying close to your Pinecone region matters more than it looks: retrieval is on the
 critical path of a live conversation, and the same query that takes ~700 ms from a

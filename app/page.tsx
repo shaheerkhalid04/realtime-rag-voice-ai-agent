@@ -12,8 +12,10 @@ import type { Health, Trace } from "@/lib/types";
 import { originIsReachable, useAssistant } from "@/lib/useAssistant";
 
 export default function AssistantPage() {
-  const assistant = useAssistant();
   const [health, setHealth] = useState<Health | null>(null);
+  // Vapi's public key is served by /health rather than baked in at build time,
+  // so the backend is the single place it is configured.
+  const assistant = useAssistant(health?.vapi_public_key);
   const [typed, setTyped] = useState("");
   const [sending, setSending] = useState(false);
   const [typedTraces, setTypedTraces] = useState<Trace[]>([]);
@@ -127,13 +129,13 @@ export default function AssistantPage() {
             <Notice title="Voice call">{assistant.error}</Notice>
           ) : null}
 
-          {!assistant.configured ? (
+          {health && !assistant.configured ? (
             <Notice title="Voice is not configured yet">
-              Add <code className="font-mono text-[13px]">NEXT_PUBLIC_VAPI_PUBLIC_KEY</code>{" "}
-              from the Vapi dashboard to enable spoken calls. Typed questions below run
-              the same retrieval pipeline in the meantime.
+              Set <code className="font-mono text-[13px]">VAPI_PUBLIC_KEY</code> from the
+              Vapi dashboard to enable spoken calls. Typed questions below run the same
+              retrieval pipeline in the meantime.
             </Notice>
-          ) : !originIsReachable(assistant.origin) ? (
+          ) : assistant.configured && !originIsReachable(assistant.origin) ? (
             <Notice title="Set a public URL for the retrieval endpoint">
               Vapi calls the language model from its own servers, so it cannot reach{" "}
               <code className="font-mono text-[13px]">localhost</code>. Point{" "}

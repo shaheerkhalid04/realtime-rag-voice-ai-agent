@@ -13,7 +13,7 @@ export type Phase =
   | "speaking"
   | "error";
 
-const PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY ?? "";
+const BUILD_TIME_KEY = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY ?? "";
 const LLM_ORIGIN = process.env.NEXT_PUBLIC_RAG_LLM_ORIGIN ?? "";
 
 /** Where Vapi's servers should POST each turn. They cannot reach localhost. */
@@ -91,7 +91,11 @@ type VapiClient = {
   setMuted(muted: boolean): void;
 };
 
-export function useAssistant() {
+/**
+ * @param servedKey Vapi's public key as reported by /health. Falls back to a
+ *   build-time NEXT_PUBLIC_ value, so either way of configuring it works.
+ */
+export function useAssistant(servedKey?: string | null) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -103,7 +107,8 @@ export function useAssistant() {
 
   const vapiRef = useRef<VapiClient | null>(null);
 
-  const configured = !!PUBLIC_KEY;
+  const publicKey = BUILD_TIME_KEY || servedKey || "";
+  const configured = !!publicKey;
   const origin = llmOrigin();
 
   const push = useCallback((role: "user" | "assistant", text: string) => {
@@ -142,7 +147,7 @@ export function useAssistant() {
 
   const start = useCallback(async () => {
     if (!configured) {
-      setError("Add NEXT_PUBLIC_VAPI_PUBLIC_KEY to enable voice.");
+      setError("Set VAPI_PUBLIC_KEY on the backend to enable voice.");
       setPhase("error");
       return;
     }
@@ -165,7 +170,7 @@ export function useAssistant() {
       // The SDK reaches for microphone and WebRTC APIs on construction, so it
       // is only ever loaded in the browser, on demand.
       const { default: Vapi } = await import("@vapi-ai/web");
-      const vapi = new Vapi(PUBLIC_KEY) as unknown as VapiClient;
+      const vapi = new Vapi(publicKey) as unknown as VapiClient;
       vapiRef.current = vapi;
 
       vapi.on("call-start", () => setPhase("listening"));
@@ -214,7 +219,7 @@ export function useAssistant() {
       );
       setPhase("error");
     }
-  }, [configured, origin, push]);
+  }, [configured, origin, publicKey, push]);
 
   const toggleMute = useCallback(() => {
     const vapi = vapiRef.current;
