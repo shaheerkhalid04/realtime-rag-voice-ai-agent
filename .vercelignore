@@ -1,0 +1,14 @@
+# Secrets must never reach the deployment bundle. config.py loads .env.local when
+# present, so an uploaded copy would silently shadow the platform's environment
+# variables.
+.env
+.env.local
+.env.*.local
+
+# Local-only tooling and build output
+.venv
+venv
+__pycache__
+*.py[cod]
+.next
+node_modules

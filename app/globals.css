@@ -1,0 +1,222 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Semantic tokens. Declared as plain custom properties so a single
+   prefers-color-scheme block flips the whole interface, then registered with
+   @theme inline so Tailwind generates utilities (bg-canvas, text-muted, ...)
+   from the same values.
+--------------------------------------------------------------------------- */
+
+:root {
+  --canvas: #ffffff;
+  --surface: #f5f5f7;
+  --surface-raised: #ffffff;
+  --ink: #1d1d1f;
+  --muted: #6e6e73;
+  --faint: #86868b;
+  --hairline: #d2d2d7;
+  --accent: #0071e3;
+  --accent-ink: #ffffff;
+  --positive: #1d7f45;
+  --warn: #b25000;
+  --shadow: 0 2px 12px rgb(0 0 0 / 0.06), 0 12px 40px rgb(0 0 0 / 0.05);
+  --glow-a: #0071e3;
+  --glow-b: #6f5cf5;
+  --glow-c: #2ac3de;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #000000;
+    --surface: #101012;
+    --surface-raised: #1a1a1c;
+    --ink: #f5f5f7;
+    --muted: #a1a1a6;
+    --faint: #86868b;
+    --hairline: #2a2a2d;
+    --accent: #0a84ff;
+    --accent-ink: #ffffff;
+    --positive: #4ad07f;
+    --warn: #ff9f0a;
+    --shadow: 0 2px 14px rgb(0 0 0 / 0.5), 0 18px 60px rgb(0 0 0 / 0.45);
+    --glow-a: #0a84ff;
+    --glow-b: #8b7bff;
+    --glow-c: #34d9f0;
+  }
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-raised: var(--surface-raised);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-hairline: var(--hairline);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-positive: var(--positive);
+  --color-warn: var(--warn);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Segoe UI Variable Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Mono", Menlo,
+    Consolas, monospace;
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+--------------------------------------------------------------------------- */
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Apple sets headlines much tighter than body copy and lets them run to the
+   optical edge of the measure. */
+.headline {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.06;
+}
+
+.subhead {
+  color: var(--muted);
+  font-size: clamp(1.0625rem, 0.95rem + 0.5vw, 1.3125rem);
+  line-height: 1.45;
+  letter-spacing: 0;
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.hairline {
+  border-color: var(--hairline);
+}
+
+/* ---------------------------------------------------------------------------
+   Motion
+--------------------------------------------------------------------------- */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes drift {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.08);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.035);
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.thinking {
+  background: linear-gradient(
+    90deg,
+    var(--faint) 20%,
+    var(--ink) 50%,
+    var(--faint) 80%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Scrollbars inside panels - visible enough to find, quiet enough to ignore
+--------------------------------------------------------------------------- */
+
+.scroller {
+  scrollbar-width: thin;
+  scrollbar-color: var(--hairline) transparent;
+}
+
+.scroller::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scroller::-webkit-scrollbar-thumb {
+  background: var(--hairline);
+  border-radius: 99px;
+}
+
+.scroller::-webkit-scrollbar-track {
+  background: transparent;
+}
