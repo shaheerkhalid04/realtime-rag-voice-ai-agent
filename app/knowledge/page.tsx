@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button, Chip, Notice, Panel, Spinner } from "@/components/ui";
 import { addText, deleteDocument, getDocuments, uploadDocument } from "@/lib/api";
+import { AdminToken } from "@/components/admin-token";
 import type { DocumentMeta } from "@/lib/types";
 
 const ACCEPT = ".pdf,.docx,.txt,.md,.markdown";
@@ -147,6 +148,7 @@ export default function KnowledgePage() {
           {visible.length} document{visible.length === 1 ? "" : "s"} ·{" "}
           {chunks.toLocaleString()} passages indexed
         </p>
+        <AdminToken />
       </section>
 
       <section className="mx-auto max-w-3xl px-5 sm:px-6">

@@ -15,7 +15,7 @@ export default function AssistantPage() {
   const [health, setHealth] = useState<Health | null>(null);
   // Vapi's public key is served by /health rather than baked in at build time,
   // so the backend is the single place it is configured.
-  const assistant = useAssistant(health?.vapi_public_key);
+  const assistant = useAssistant(health?.vapi_public_key, health?.vapi_assistant_id, health?.model);
   const [typed, setTyped] = useState("");
   const [sending, setSending] = useState(false);
   const [typedTraces, setTypedTraces] = useState<Trace[]>([]);

@@ -34,7 +34,7 @@ export function originIsReachable(origin: string): boolean {
  * FastAPI endpoint for every turn instead of an off-the-shelf model, which is
  * where retrieval gets injected.
  */
-function assistantConfig(origin: string) {
+function assistantConfig(origin: string, model: string) {
   return {
     name: "Attune",
     firstMessage:
@@ -54,7 +54,8 @@ function assistantConfig(origin: string) {
       provider: "custom-llm" as const,
       // Vapi appends /chat/completions to this.
       url: `${origin}/api/py`,
-      model: "llama-3.3-70b-versatile",
+      // Reported by /health; the backend always answers with its own GROQ_MODEL.
+      model,
       // The real system prompt is applied server-side alongside the retrieved
       // context; this is only what Vapi shows in its own logs.
       messages: [
@@ -95,7 +96,11 @@ type VapiClient = {
  * @param servedKey Vapi's public key as reported by /health. Falls back to a
  *   build-time NEXT_PUBLIC_ value, so either way of configuring it works.
  */
-export function useAssistant(servedKey?: string | null) {
+export function useAssistant(
+  servedKey?: string | null,
+  servedAssistantId?: string | null,
+  servedModel?: string | null,
+) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -209,7 +214,11 @@ export function useAssistant(servedKey?: string | null) {
         }
       });
 
-      const call = await vapi.start(assistantConfig(origin) as never);
+      // A dashboard assistant carries the x-vapi-secret header server side, so the secret
+      // never reaches the browser. Without one, fall back to the inline config.
+      const call = servedAssistantId
+        ? await vapi.start(servedAssistantId as never)
+        : await vapi.start(assistantConfig(origin, servedModel || "openai/gpt-oss-120b") as never);
       setCallId(call?.id ?? null);
     } catch (exception) {
       setError(
@@ -219,7 +228,7 @@ export function useAssistant(servedKey?: string | null) {
       );
       setPhase("error");
     }
-  }, [configured, origin, publicKey, push]);
+  }, [configured, origin, publicKey, push, servedAssistantId, servedModel]);
 
   const toggleMute = useCallback(() => {
     const vapi = vapiRef.current;

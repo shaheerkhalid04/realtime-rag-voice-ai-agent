@@ -13,11 +13,12 @@ request path when it routes into a Python function, and next.config.ts proxies
 the same prefix to uvicorn in development.
 """
 
+import hmac
 import json
 import time
 import uuid
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from ._lib import chunking, config, embeddings, extract, rag, store
@@ -38,11 +39,21 @@ async def unhandled(_: Request, exc: Exception):
 # Status
 # ---------------------------------------------------------------------------
 
+def require_admin(x_admin_token: str | None = Header(default=None)) -> None:
+    """Knowledge-base writes need the admin token. Without ADMIN_TOKEN configured, writes are off."""
+    if not config.ADMIN_TOKEN:
+        raise _fail(503, "Writes are disabled: ADMIN_TOKEN is not configured on this deployment.")
+    if not x_admin_token or not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+        raise _fail(401, "This action needs the admin token.")
+
+
 @app.get("/api/py/health")
-def health():
+def health(verify: bool = Query(False)):
+    """Status for the page. With ?verify=1 it also makes a real, tiny model call and reports
+    ok, model and latency_ms, so a retired model shows up as not ok."""
     missing = config.missing_credentials()
     documents = [] if missing else store.list_documents()
-    return {
+    payload = {
         "ok": not missing,
         "missing": missing,
         "model": config.CHAT_MODEL,
@@ -53,7 +64,19 @@ def health():
         "chunks": 0 if missing else store.count_chunks(),
         "secured": bool(config.VAPI_SERVER_SECRET),
         "vapi_public_key": config.VAPI_PUBLIC_KEY,
+        "vapi_assistant_id": config.VAPI_ASSISTANT_ID,
+        "writes_enabled": bool(config.ADMIN_TOKEN),
     }
+    if verify and not missing:
+        try:
+            payload["latency_ms"] = rag.verify()["latency_ms"]
+        except Exception as exc:  # noqa: BLE001
+            payload["ok"] = False
+            payload["verify_error"] = type(exc).__name__
+            payload["detail"] = str(exc)[:300]
+    elif verify:
+        payload["ok"] = False
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -102,7 +125,7 @@ def documents():
     return {"documents": store.list_documents(), "chunks": store.count_chunks()}
 
 
-@app.post("/api/py/documents")
+@app.post("/api/py/documents", dependencies=[Depends(require_admin)])
 async def upload_document(file: UploadFile = File(...)):
     data = await file.read()
     if not data:
@@ -123,7 +146,7 @@ async def upload_document(file: UploadFile = File(...)):
     return _ingest(name, text, "upload")
 
 
-@app.post("/api/py/documents/text")
+@app.post("/api/py/documents/text", dependencies=[Depends(require_admin)])
 async def add_text(title: str = Form(...), text: str = Form(...)):
     cleaned = text.strip()
     if len(cleaned) < 40:
@@ -131,7 +154,7 @@ async def add_text(title: str = Form(...), text: str = Form(...)):
     return _ingest(title.strip() or "Pasted note", cleaned, "text")
 
 
-@app.delete("/api/py/documents/{doc_id}")
+@app.delete("/api/py/documents/{doc_id}", dependencies=[Depends(require_admin)])
 def remove_document(doc_id: str):
     return {"deleted": doc_id, "chunks": store.delete_document(doc_id)}
 
@@ -392,6 +415,6 @@ def traces(call_id: str):
     return {"traces": store.read_traces(call_id)}
 
 
-@app.delete("/api/py/traces/{call_id}")
+@app.delete("/api/py/traces/{call_id}", dependencies=[Depends(require_admin)])
 def clear_traces(call_id: str):
     return {"cleared": store.clear_traces(call_id)}

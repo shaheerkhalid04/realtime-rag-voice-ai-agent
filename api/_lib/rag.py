@@ -216,6 +216,29 @@ def _prompt_messages(
 # Generation
 # ---------------------------------------------------------------------------
 
+def reasoning_kwargs() -> dict:
+    """gpt-oss models reason before answering and those tokens count against max_tokens.
+    Low effort keeps spoken answers fast and inside the budget."""
+    return {"extra_body": {"reasoning_effort": "low"}} if config.CHAT_MODEL.startswith("openai/gpt-oss") else {}
+
+
+# Spoken answers stay short through the prompt; the cap leaves room for reasoning tokens.
+VOICE_MAX_TOKENS = 450
+TEXT_MAX_TOKENS = 1600
+
+
+def verify() -> dict:
+    """A real, tiny call to the chat model, for the health check."""
+    started = time.perf_counter()
+    client().chat.completions.create(
+        model=config.CHAT_MODEL,
+        max_tokens=16,
+        messages=[{"role": "user", "content": "Reply with OK."}],
+        **reasoning_kwargs(),
+    )
+    return {"ok": True, "model": config.CHAT_MODEL, "latency_ms": round((time.perf_counter() - started) * 1000, 1)}
+
+
 def answer(
     question: str,
     chunks: list[dict],
@@ -227,8 +250,9 @@ def answer(
     response = client().chat.completions.create(
         model=config.CHAT_MODEL,
         temperature=0.2,
-        max_tokens=180 if voice else 1200,
+        max_tokens=VOICE_MAX_TOKENS if voice else TEXT_MAX_TOKENS,
         messages=_prompt_messages(system, chunks, history or [], question),
+        **reasoning_kwargs(),
     )
     return (response.choices[0].message.content or "").strip()
 
@@ -250,9 +274,10 @@ def stream_answer(
     stream = client().chat.completions.create(
         model=config.CHAT_MODEL,
         temperature=0.2,
-        max_tokens=180 if voice else 1200,
+        max_tokens=VOICE_MAX_TOKENS if voice else TEXT_MAX_TOKENS,
         stream=True,
         messages=_prompt_messages(system, chunks, history or [], question),
+        **reasoning_kwargs(),
     )
     for chunk in stream:
         if not chunk.choices:

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import { LiveModel } from "@/components/live-model";
 
 export const metadata: Metadata = {
   title: "How it works — Attune",
@@ -39,10 +41,10 @@ const STEPS = [
   },
 ];
 
-const STACK = [
+const STACK: Array<[string, ReactNode]> = [
   ["Voice", "Vapi — WebRTC transport, speech-to-text, turn-taking, text-to-speech"],
   ["Retrieval", "Pinecone serverless — vectors and hosted llama-text-embed-v2 embeddings"],
-  ["Generation", "Groq — llama-3.3-70b-versatile, streamed"],
+  ["Generation", <LiveModel key="model" />],
   ["Backend", "FastAPI on a Python serverless function"],
   ["Frontend", "Next.js App Router, React, Tailwind"],
 ];
