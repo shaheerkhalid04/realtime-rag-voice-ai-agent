@@ -23,6 +23,12 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
 # Optional shared secret. When set, Vapi must echo it back on every custom-LLM
 # request as the x-vapi-secret header.
 VAPI_SERVER_SECRET = os.environ.get("VAPI_SERVER_SECRET", "").strip()
+# Optional: an assistant configured in the Vapi dashboard (custom LLM URL plus the
+# x-vapi-secret header). When set, the page starts that assistant instead of building one
+# in the browser, which is what lets VAPI_SERVER_SECRET be switched on safely.
+VAPI_ASSISTANT_ID = os.environ.get("VAPI_ASSISTANT_ID", "").strip()
+# Required for every knowledge-base write and for clearing traces. Unset means writes are off.
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "").strip()
 
 # Vapi's *public* key, which is meant to be visible to the browser - it only
 # authorises starting a web call. Serving it from /health rather than baking it
@@ -52,7 +58,7 @@ NS_REGISTRY = "registry"
 NS_TRACES = "traces"
 
 # --- Retrieval and generation ---------------------------------------------
-CHAT_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+CHAT_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
 TOP_K = int(os.environ.get("TOP_K", "5"))
 # Below this cosine score a match is noise rather than context. Spoken questions
 # are short and full of filler, so the floor is deliberately forgiving.

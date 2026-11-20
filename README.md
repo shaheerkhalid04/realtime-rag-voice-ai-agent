@@ -59,7 +59,7 @@ by which the assistant can answer without it.
 | --- | --- |
 | Voice | Vapi — WebRTC transport, Deepgram STT, Vapi TTS, turn-taking |
 | Vectors + embeddings | Pinecone serverless with hosted `llama-text-embed-v2` |
-| Generation | Groq, `llama-3.3-70b-versatile`, streamed |
+| Generation | Groq, `openai/gpt-oss-120b` by default (`GROQ_MODEL`), streamed |
 | Backend | FastAPI, deployed as one Python serverless function |
 | Frontend | Next.js App Router, React 19, Tailwind v4 |
 
@@ -147,8 +147,23 @@ laptop in another continent takes a fraction of that from `us-east-1`.
 
 ### Optional: lock the endpoint
 
-Set `VAPI_SERVER_SECRET` on the deployment *and* in the Vapi assistant's custom-LLM
-headers. Every request without a matching `x-vapi-secret` header is then rejected.
+Create the assistant in the Vapi dashboard (custom LLM, URL `<origin>/api/py`, header
+`x-vapi-secret`, and `maxDurationSeconds` as short as you like), then set
+`VAPI_ASSISTANT_ID` and `VAPI_SERVER_SECRET` on the deployment. The page starts that
+assistant by id, so the secret stays in Vapi and never reaches the browser, and every
+request without a matching `x-vapi-secret` header is rejected. Without
+`VAPI_ASSISTANT_ID` the page builds the assistant inline, which only works while
+`VAPI_SERVER_SECRET` is unset.
+
+### Admin token and health
+
+Adding, pasting and deleting documents, and clearing traces, need `ADMIN_TOKEN`, sent as
+an `x-admin-token` header. Enter it once on the Knowledge page; it is kept in that browser
+only. Without `ADMIN_TOKEN` configured, those writes are off.
+
+`GET /api/py/health?verify=1` makes a real, tiny model call and returns `ok`, `model` and
+`latency_ms`, so a retired or misconfigured model shows up as not ok. Groq retired
+`llama-3.3-70b-versatile` on 16 Aug 2026.
 
 ---
 
@@ -158,11 +173,11 @@ All routes are prefixed `/api/py`.
 
 | Method | Route | Purpose |
 | --- | --- | --- |
-| `GET` | `/health` | Credential status, model names, index size |
+| `GET` | `/health` | Credential status, model names, index size; `?verify=1` adds a real model call |
 | `GET` | `/documents` | List indexed documents |
-| `POST` | `/documents` | Upload a file (multipart, ≤ 4 MB) |
-| `POST` | `/documents/text` | Index pasted text |
-| `DELETE` | `/documents/{id}` | Remove a document and all its vectors |
+| `POST` | `/documents` | Upload a file (multipart, up to 4 MB). Needs `x-admin-token` |
+| `POST` | `/documents/text` | Index pasted text. Needs `x-admin-token` |
+| `DELETE` | `/documents/{id}` | Remove a document and all its vectors. Needs `x-admin-token` |
 | `POST` | `/search` | Raw retrieval, for inspection |
 | `POST` | `/chat` | Text answer with sources and timings |
 | `POST` | `/chat/completions` | **The Vapi endpoint.** OpenAI-compatible, SSE |

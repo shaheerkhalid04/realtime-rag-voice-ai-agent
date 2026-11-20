@@ -46,6 +46,10 @@ export type Health = {
   secured: boolean;
   /** Vapi's public key, safe to expose - it only authorises starting a call. */
   vapi_public_key: string;
+  /** An assistant configured in the Vapi dashboard; when set the page starts it by id. */
+  vapi_assistant_id?: string;
+  writes_enabled?: boolean;
+  latency_ms?: number;
 };
 
 export type Turn = {
